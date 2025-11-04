@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>YANSHS NGENTOT DOWNLOADER HTML</title>
+    <meta charset="utf-8">
+    <style>
+        body{font-family:consolas;background:#000;color:#0f0;text-align:center;padding:50px;}
+        input,button{padding:15px;font-size:20px;width:80%;margin:10px;}
+        button{background:#0f0;color:#000;border:none;cursor:pointer;}
+        #log{color:#ff0;margin-top:20px;white-space:pre-line;}
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+</head>
+<body>
+    <h1>NGENTOT WEBSITE DOWNLOADER HTML</h1>
+    <input type="text" id="url" placeholder="https://target.com">
+    <button onclick="ngentot()">NGENTOT SEKARANG BANGSAT!</button>
+    <div id="log">Status: Siap ngentot...</div>
+
+    <script>
+    async function ngentot(){
+        let base = document.getElementById('url').value.trim();
+        if(!base) return alert('ISI URL DULU ANJING!');
+        if(!base.startsWith('http')) base = 'https://'+base;
+        document.getElementById('log').innerHTML = 'Mulai ngentot server...';
+        
+        let zip = new JSZip();
+        let fetched = new Set();
+        let queue = [base];
+        let count = 0;
+
+        while(queue.length && count < 500){
+            let url = queue.shift();
+            if(fetched.has(url)) continue;
+            fetched.add(url);
+            
+            try{
+                let res = await fetch(url, {mode:'cors'});
+                if(!res.ok) continue;
+                let text = await res.text();
+                let blob = new Blob([text], {type: 'text/plain'});
+                let path = new URL(url).pathname;
+                if(!path || path.endsWith('/')) path += 'index.html';
+                zip.file(path.slice(1), blob);
+                document.getElementById('log').innerHTML += `\n[+] NGENTOT → ${path}`;
+                count++;
+                
+                // Cari asset
+                let matches = text.matchAll(/(href|src)=["']([^"']+)["']/gi);
+                for(let m of matches){
+                    let link = m[2];
+                    if(link.startsWith('data:')) continue;
+                    if(link.startsWith('http')) continue;
+                    let abs = new URL(link, url).href;
+                    if(abs.startsWith(base) && !fetched.has(abs)){
+                        queue.push(abs);
+                    }
+                }
+            }catch(e){
+                // CORS block? Skip anjing
+            }
+        }
+        
+        // Tambah file sensitif (kalau bisa diakses)
+        let sensitif = ['/.env','/config.php','/wp-config.php','/admin/','/backup/','/phpinfo.php'];
+        for(let s of sensitif){
+            try{
+                let u = new URL(s, base).href;
+                let r = await fetch(u);
+                if(r.ok){
+                    let b = await r.blob();
+                    zip.file(s.slice(1), b);
+                    document.getElementById('log').innerHTML += `\n[+] JACKPOT → ${s}`;
+                }
+            }catch{}
+        }
+        
+        zip.generateAsync({type:"blob"}).then(blob => {
+            saveAs(blob, new URL(base).host + "_NGENTOT_FULL.zip");
+            document.getElementById('log').innerHTML += `\n\nSELESAI NGENTOT! ZIP SUDAH DI DOWNLOAD!`;
+        });
+    }
+    </script>
+</body>
+</html>
